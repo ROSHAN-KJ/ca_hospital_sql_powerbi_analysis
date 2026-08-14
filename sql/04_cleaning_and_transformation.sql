@@ -21,7 +21,7 @@ FROM claims_and_billing;
 DROP TABLE claims_and_billing1;
 
 CREATE TABLE claims_and_billing1 AS
-SELECT DISTINCT * 
+SELECT * 
 FROM claims_and_billing;
 
 UPDATE claims_and_billing1
@@ -53,6 +53,18 @@ ALTER TABLE claims_and_billing1
 
 ALTER TABLE claims_and_billing1 
     RENAME TO claims_and_billing_clean;
+
+ALTER TABLE claims_and_billing_clean
+ADD INDEX (encounter_id);
+
+SET SQL_SAFE_UPDATES = 0;
+
+DELETE c1 FROM claims_and_billing_clean c1
+INNER JOIN claims_and_billing_clean c2
+	ON c1.encounter_id = c2.encounter_id 
+    AND c1.billing_id > c2.billing_id;
+    
+ALTER TABLE claims_and_billing_clean DROP INDEX encounter_id;
 
 -- =====================================================================
 -- DENIALS CLEANING
