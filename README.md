@@ -128,39 +128,39 @@ The data model connects clinical events and revenue transactions through a centr
 
 #### 1. Overview (Executive Command Center)
 Monitors high-level operational throughput (70K encounters, 24K inpatients), monthly volume pacing, and departmental intake shares.
-![Overview](images/powerbi/01_overview.png)
+![Overview](images/powerbi/01_overview.jpg)
 
 #### 2. Revenue Cycle
 Audits $112.90M in billed charges, examining insurance payouts ($30.41M / 26.93%), patient liability, and 3-month rolling revenue momentum.
-![Revenue Cycle](images/powerbi/02_revenue_cycle.png)
+![Revenue Cycle](images/powerbi/02_revenue_cycle.jpg)
 
 #### 3. Hospital Losses & Denial Audit
 Analyzes **$9.65M in direct hospital losses (8.54% leaking percentage)**, attributing financial leakages to specific denial reasons and ranking commercial vs. public payers.
-![Hospital Losses](images/powerbi/03_hospital_losses.png)
+![Hospital Losses](images/powerbi/03_hospital_losses.jpg)
 
 #### 4. Clinical Operations
 Staffing and clinician workload tracking across 1.49K active providers, evaluating encounter loads (46.95 average) and admission source distribution.
-![Clinical Operations](images/powerbi/04_clinical_operations.png)
+![Clinical Operations](images/powerbi/04_clinical_operations.jpg)
 
 #### 5. Treatment Metrics
 Clinical service line volume monitoring: 46.79% chronic condition rate, 33.13% abnormal lab tests, top medication administration, and procedure yield.
-![Treatment Metrics](images/powerbi/05_treatment_metrics.png)
+![Treatment Metrics](images/powerbi/05_treatment_metrics.jpg)
 
 #### 6. Patient Outcomes
 Clinical complexity evaluation through comorbidity scoring (46.79%), diagnostic test intensity (0.78), and high-risk polypharmacy encounters (20.03%).
-![Patient Outcomes](images/powerbi/06_patient_outcomes.png)
+![Patient Outcomes](images/powerbi/06_patient_outcomes.jpg)
 
 #### 7. Patient Insights
 Quality compliance matrix monitoring the **3.08% 30-day readmission rate**, readmission categories, age/ethnicity billing demographics, and geographic distribution.
-![Patient Insights](images/powerbi/07_patient_insights.png)
+![Patient Insights](images/powerbi/07_patient_insights.jpg)
 
 #### 8. Drill-Through: Financial Performance Details
 Granular encounter-level financial auditing tracking departmental billed charges, insurance recovery, and daily run-rates.
-![Financial Drillthrough](images/powerbi/08_financial_drillthrough.png)
+![Financial Drillthrough](images/powerbi/08_financial_drillthrough.jpg)
 
 #### 9. Drill-Through: Hospital Loss Details
 Physician-level claims audit and geographic denial distributions across individual US states.
-![Loss Drillthrough](images/powerbi/09_hospital_loss_drillthrough.png)
+![Loss Drillthrough](images/powerbi/09_hospital_loss_drillthrough.jpg)
 
 ---
 
