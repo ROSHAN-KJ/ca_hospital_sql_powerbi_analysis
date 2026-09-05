@@ -19,7 +19,7 @@ This project showcases an end-to-end healthcare data engineering and business in
 
 The project integrates two layers of the analytics lifecycle:
 1. **Upstream Engineering & Transformation (MySQL 8.0):** Ingested unformatted CSV files, enforced primary/foreign key integrity, developed denormalized master views, and executed deep diagnostic SQL queries.
-2. **Downstream Modeling & Executive BI (Power BI & DAX):** Designed a constellation star schema with custom-generated DAX calculated tables (including a custom date dimension), dynamic context-transition measures, and built an interactive **7-page dashboard suite with 2 dedicated drill-through views**.
+2. **Downstream Modeling & Executive BI (Power BI & DAX):** Designed a constellation star schema with custom-generated DAX calculated tables (including a custom date dimension), dynamic context-transition measures, and built an interactive **7-page interactive Power BI report with 2 dedicated drill-through pages**.
 
 ---
 
