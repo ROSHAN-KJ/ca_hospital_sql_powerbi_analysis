@@ -1,0 +1,262 @@
+DEFINE
+    MEASURE 'Encounters'[Discharge Count] = CALCULATE(COUNTROWS(Encounters), USERELATIONSHIP('Calendar'[Date], Encounters[discharge_date]))
+    MEASURE '_Measures'[Total Encounters] = COUNTROWS(Encounters)
+    MEASURE '_Measures'[Total Unique Patients] = DISTINCTCOUNT(Encounters[patient_id])
+    MEASURE '_Measures'[Inpatient Encounters] = CALCULATE(
+    COUNTROWS(Encounters),
+    Encounters[encounter_type] = "Inpatients"
+)
+    MEASURE '_Measures'[Total Charges] = SUM('Claims and billing'[total_charges])
+    MEASURE '_Measures'[Average Charge per Encounter] = DIVIDE([Total Charges], [Total Encounters], 0)
+    MEASURE '_Measures'[Total Insurance Coverage] = SUMX(
+    'Claims and billing',
+    IF(
+        'Claims and billing'[claim_status] = "Denied",
+        0,
+        'Claims and billing'[total_charges] - 'Claims and billing'[patient_responsibility]
+    )
+)
+    MEASURE '_Measures'[Total Patient Responsibility] = SUM('Claims and billing'[patient_responsibility])
+    MEASURE '_Measures'[Insurance Coverage %] = VAR InsurancePaid = [Total Insurance Coverage]
+VAR TotalBilled = [Total Charges]
+RETURN
+DIVIDE(InsurancePaid, TotalBilled, 0)
+    MEASURE '_Measures'[Hospital Loss] = SUMX(
+    'Claims and billing',
+    IF(
+        'Claims and billing'[claim_status] = "Denied",
+        'Claims and billing'[total_charges],
+        0
+    )
+)
+    MEASURE '_Measures'[Leaking Percentage] = VAR TotalLoss = [Hospital Loss]
+VAR TotalBilled = [Total Charges]
+RETURN
+DIVIDE(TotalLoss, TotalBilled, 0)
+    MEASURE '_Measures'[MoM Total Charges Growth %] = VAR CurrentMonthCharges = [Total Charges]
+VAR PreviousMonthCharges = 
+    CALCULATE(
+        [Total Charges],
+        DATEADD('Calendar'[Date], -1, MONTH)
+    )
+RETURN
+DIVIDE(CurrentMonthCharges - PreviousMonthCharges, PreviousMonthCharges, 0)
+    MEASURE '_Measures'[Payer Loss Rank] = IF(
+    HASONEVALUE('Claims and billing'[insurance_payer]),
+    RANKX(
+    ALL('Claims and billing'[insurance_payer]),
+    [Hospital Loss],
+    ,
+    DESC,
+    Dense
+),
+BLANK()
+)
+    MEASURE '_Measures'[Cumultative Encounters] = CALCULATE(
+    [Total Encounters],
+    FILTER(
+        ALL('Calendar'),
+        'Calendar'[Date] <= MAX('Calendar'[Date])
+    )
+)
+    MEASURE '_Measures'[3M Rolling Charges] = VAR LatestTransactionDate = CALCULATE(MAX('Claims and billing'[billing_date]), REMOVEFILTERS())
+RETURN
+IF(
+    ISBLANK(LatestTransactionDate),
+    BLANK(),
+    CALCULATE(
+        [Total Charges],
+        DATESBETWEEN(
+            'Calendar'[Date],
+            EDATE(LatestTransactionDate, -3),
+            LatestTransactionDate
+        )
+    )
+)
+    MEASURE '_Measures'[Payer Cumultative Revenue %] = VAR CurrentPayerRevenue = [Total Charges]
+VAR AllpayersTable = ALL('Claims and billing'[insurance_payer])
+VAR CumultativeRevenue = 
+    CALCULATE(
+        [Total Charges],
+        FILTER(
+            AllpayersTable,
+            [Total Charges] >= CurrentPayerRevenue
+        )
+    )
+VAR TotalRevenue = CALCULATE([Total Charges], AllpayersTable)
+RETURN
+DIVIDE(CumultativeRevenue, TotalRevenue, 0)
+    MEASURE '_Measures'[Active Providers] = DISTINCTCOUNT(Providers[provider_id])
+    MEASURE '_Measures'[Encounters Per Provider] = DIVIDE([Total Encounters], [Active Providers], 0)
+    MEASURE '_Measures'[Avg Labs per Encounter] = DIVIDE(DISTINCTCOUNT('Lab tests'[test_id]), [Total Encounters], 0)
+    MEASURE '_Measures'[Polypharmacy Rate] = DIVIDE(
+    CALCULATE(
+        DISTINCTCOUNT(Medications[encounter_id]),
+        FILTER(
+            VALUES(Medications[encounter_id]),
+            CALCULATE(COUNTA(Medications[medication_name])) >= 3
+        )
+    ),
+    [Total Encounters],
+    0
+)
+    MEASURE '_Measures'[Procedure Yield Rate] = DIVIDE(DISTINCTCOUNT(Procedures[encounter_id]), [Total Encounters], 0)
+    MEASURE '_Measures'[Chronic Condition Rate] = DIVIDE(
+    CALCULATE(
+        DISTINCTCOUNT(Diagnoses[encounter_id]),
+        Diagnoses[chronic_flag] = TRUE
+    ),
+    [Total Encounters],
+    0
+)
+    MEASURE '_Measures'[Abnormal Lab Rate] = DIVIDE(
+    CALCULATE(
+        COUNT('Lab tests'[test_id]),
+        'Lab tests'[result_value] = "abnormal"
+    ),
+    COUNTA('Lab tests'[test_id]),
+    0
+)
+    MEASURE '_Measures'[Medication Encounter Share] = DIVIDE(
+    DISTINCTCOUNT(Medications[encounter_id]),
+    CALCULATE(DISTINCTCOUNT(Medications[encounter_id]), REMOVEFILTERS(Medications[medication_name])),
+    0
+)
+    MEASURE '_Measures'[Comorbidity Index] = DIVIDE(
+    CALCULATE(
+        COUNTA(Diagnoses[diagnosis_id]),
+        Diagnoses[chronic_flag] = TRUE
+    ),
+    DISTINCTCOUNT(Encounters[encounter_id]),
+    0
+)
+    MEASURE '_Measures'[High Risk Polypharmacy %] = VAR EncountersWith3Plus = 
+    CALCULATETABLE(
+        VALUES(Medications[encounter_id]),
+        FILTER(
+            VALUES(Medications[encounter_id]),
+            CALCULATE(COUNTA(Medications[medication_record_id]), ALLEXCEPT(Medications, Medications[encounter_id])) >= 3
+        )
+    )
+RETURN
+    DIVIDE(
+        COUNTROWS(EncountersWith3Plus),
+        DISTINCTCOUNT(Encounters[encounter_id]),
+        0
+    )
+    MEASURE '_Measures'[Diagnostic Intensity] = DIVIDE(
+    COUNTA('Lab tests'[test_id]),
+    DISTINCTCOUNT(Encounters[encounter_id]),
+    0
+)
+    MEASURE '_Measures'[Average Length of Stay] = AVERAGEX(
+    FILTER(
+    Encounters,
+    NOT(ISBLANK(Encounters[discharge_date]))
+    ),
+    DATEDIFF(Encounters[admission_date], Encounters[discharge_date], DAY)
+)
+    MEASURE '_Measures'[3-Day Stay %] = DIVIDE(
+    CALCULATE(COUNT(Encounters[encounter_id]), Encounters[Length of Stay] = 3),
+    CALCULATE(COUNT(Encounters[encounter_id]), NOT(ISBLANK(Encounters[Length of Stay])))
+)
+    MEASURE '_Measures'[Days to Readmit] = VAR CurrentAdmission = SELECTEDVALUE(Encounters[admission_date])
+VAR CurrentPatient = SELECTEDVALUE(Encounters[patient_id])
+VAR PreviousDischarge = 
+    CALCULATE(
+        MAX(Encounters[discharge_date]),
+        ALLEXCEPT(Encounters, Encounters[patient_id]),
+        Encounters[discharge_date] < CurrentAdmission,
+        -- Ensure we don't look at blank discharge dates
+        NOT(ISBLANK(Encounters[discharge_date]))
+    )
+RETURN
+    IF(
+        NOT(ISBLANK(PreviousDischarge)) && NOT(ISBLANK(CurrentAdmission)),
+        DATEDIFF(PreviousDischarge, CurrentAdmission, DAY),
+        BLANK()
+    )
+    MEASURE '_Measures'[30-Day Readmission Rate] = VAR TotalDischarges = 
+    CALCULATE(
+        COUNT(Encounters[encounter_id]),
+        NOT(ISBLANK(Encounters[discharge_date]))
+    )
+
+VAR Readmissions30Days = 
+    CALCULATE(
+        COUNT(Encounters[encounter_id]),
+        FILTER(
+            Encounters,
+            NOT(ISBLANK(Encounters[discharge_date])) &&
+            VAR CurrentPatient = Encounters[patient_id]
+            VAR CurrentAdmission = Encounters[admission_date]
+            VAR PrevDischarge = 
+                CALCULATE(
+                    MAX(Encounters[discharge_date]),
+                    REMOVEFILTERS(Encounters),
+                    Encounters[patient_id] = CurrentPatient,
+                    Encounters[admission_date] < CurrentAdmission,
+                    NOT(ISBLANK(Encounters[discharge_date]))
+                )
+            VAR DaysDiff = DATEDIFF(PrevDischarge, CurrentAdmission, DAY)
+            RETURN
+                NOT(ISBLANK(PrevDischarge)) && DaysDiff >= 0 && DaysDiff <= 30
+        )
+    )
+
+RETURN
+    DIVIDE(Readmissions30Days, TotalDischarges, 0)
+    MEASURE '_Measures'[Target Upper Limit] = 0.02
+    MEASURE '_Measures'[Coverage Goal] = VAR CurrentCoverage = [Insurance Coverage %]
+RETURN
+IF(
+    NOT(ISBLANK(CurrentCoverage)),
+    SWITCH(
+        TRUE(),
+        CurrentCoverage >= 0.30, 0.30,  // GOOD: Anything 30% and above
+        CurrentCoverage >= 0.15, 0.20,  // NEUTRAL: Between 15% and 29%
+        0.10                             // LOW/BAD: Under 15%
+    )
+)
+    MEASURE '_Measures'[Leaking Target] = IF(
+    NOT(ISBLANK([Leaking Percentage])),
+    0.22
+)
+
+EVALUATE
+    SUMMARIZECOLUMNS(
+        "Discharge Count", [Discharge Count],
+        "Total Encounters", [Total Encounters],
+        "Total Unique Patients", [Total Unique Patients],
+        "Inpatient Encounters", [Inpatient Encounters],
+        "Total Charges", [Total Charges],
+        "Average Charge per Encounter", [Average Charge per Encounter],
+        "Total Insurance Coverage", [Total Insurance Coverage],
+        "Total Patient Responsibility", [Total Patient Responsibility],
+        "Insurance Coverage %", [Insurance Coverage %],
+        "Hospital Loss", [Hospital Loss],
+        "Leaking Percentage", [Leaking Percentage],
+        "MoM Total Charges Growth %", [MoM Total Charges Growth %],
+        "Payer Loss Rank", [Payer Loss Rank],
+        "Cumultative Encounters", [Cumultative Encounters],
+        "3M Rolling Charges", [3M Rolling Charges],
+        "Payer Cumultative Revenue %", [Payer Cumultative Revenue %],
+        "Active Providers", [Active Providers],
+        "Encounters Per Provider", [Encounters Per Provider],
+        "Avg Labs per Encounter", [Avg Labs per Encounter],
+        "Polypharmacy Rate", [Polypharmacy Rate],
+        "Procedure Yield Rate", [Procedure Yield Rate],
+        "Chronic Condition Rate", [Chronic Condition Rate],
+        "Abnormal Lab Rate", [Abnormal Lab Rate],
+        "Medication Encounter Share", [Medication Encounter Share],
+        "Comorbidity Index", [Comorbidity Index],
+        "High Risk Polypharmacy %", [High Risk Polypharmacy %],
+        "Diagnostic Intensity", [Diagnostic Intensity],
+        "Average Length of Stay", [Average Length of Stay],
+        "3-Day Stay %", [3-Day Stay %],
+        "Days to Readmit", [Days to Readmit],
+        "30-Day Readmission Rate", [30-Day Readmission Rate],
+        "Target Upper Limit", [Target Upper Limit],
+        "Coverage Goal", [Coverage Goal],
+        "Leaking Target", [Leaking Target]
+    )

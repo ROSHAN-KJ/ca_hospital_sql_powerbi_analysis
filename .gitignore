@@ -23,3 +23,9 @@ Thumbs.db
 # Database connection files (if you ever add Python/Node scripts later)
 config.json
 secrets.yml
+
+# Power BI recovery & temp files
+*.tmp
+*.temp
+AutoRecovery
+~$*
